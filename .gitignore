@@ -1,4 +1,5 @@
 # data files
+*.pkl
 *.csv
 *.pdf
 *.txt
