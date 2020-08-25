@@ -28,5 +28,11 @@ performs comparatively).
     
 
 ## Model & Package Performance
-# 
+### Scikit-learn + Imbalanced-learn deployed on Compute Engine
+Compute Engine Specs:
+- n1-standard-4 (4 vCPUs, 15 GB memory) 
+- Debian GNU/Linux 9
+
+Logistic Regression training took 53 seconds with precision 2%, recall 67% and area under roc of 0.72.
+Stochastic Gradient Descent training took 13 seconds with 2%, recall 52% and area under roc of 0.69.
 
