@@ -28,11 +28,27 @@ performs comparatively).
     
 
 ## Model & Package Performance
-### Scikit-learn + Imbalanced-learn deployed on Compute Engine
+### 1. Scikit-learn + Imbalanced-learn deployed on Compute Engine
 Compute Engine Specs:
 - n1-standard-4 (4 vCPUs, 15 GB memory) 
 - Debian GNU/Linux 9
 
-Logistic Regression training took 53 seconds with precision 2%, recall 67% and area under roc of 0.72.
-Stochastic Gradient Descent training took 13 seconds with 2%, recall 52% and area under roc of 0.69.
+Comparison of optimal model performances:
+* Logistic Regression training took 53 seconds with precision 2%, recall 67%
+and area under roc of 0.72.  
+* Stochastic Gradient Descent training took 13 seconds with 2%, recall 52%
+and area under roc of 0.69. 
+
+### 2. Scikit-learn + Imbalanced-learn deployed on Macbook Air
+Macbook Air Specs:
+- Processor 1.6 GHz Dual-Core Intel Core i5
+- Memory 8 GB 2133 MHz LPDDR3
+
+Comparison of optimal model performances
+* Logistic Regression training took 36 seconds which is actually faster than
+ on GCP.
+* Stochastic Gradient Descent took 15 seconds which is comparable to GCP.
+
+ 
+ 
 
