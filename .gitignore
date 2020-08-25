@@ -1,11 +1,12 @@
 # data files
+*.pkl
 *.csv
 *.pdf
-*.txt
 *_csv/
 
 # mac
 **/.DS_Store
+**/.idea
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

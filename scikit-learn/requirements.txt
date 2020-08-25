@@ -1,0 +1,9 @@
+# Python 3.5.3 - These versions are particularly important to ensure that
+# imblearn works with sklearn.
+imbalanced-learn==0.6.2
+jupyter==1.0.0
+matplotlib==3.0.3
+pandas==0.25.3
+scikit-learn==0.22.2.post1
+scipy==1.4.1
+seaborn==0.9.1
