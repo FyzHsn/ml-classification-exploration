@@ -1,4 +1,7 @@
 from __future__ import print_function
+
+import time
+
 from itertools import chain
 from pyspark.ml import Pipeline
 from pyspark.ml.classification import LogisticRegression
@@ -13,7 +16,9 @@ from pyspark.ml.tuning import TrainValidationSplit, \
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, \
                                   create_map, \
-                                  lit
+                                  lit, \
+                                  udf
+from pyspark.sql.types import FloatType
 
 
 CATEGORICAL_FEATS = ['campaignId', 'platform', 'softwareVersion',
@@ -22,14 +27,28 @@ NUMERICAL_FEATS = ['startCount', 'viewCount', 'clickCount', 'installCount',
                    'startCount1d', 'startCount7d', 'timeSinceLastStart']
 
 
+def time_diff_in_minutes(dt_0, dt_1):
+    if dt_0 is None:
+        return 0.0
+    return round((dt_1 - dt_0).total_seconds() / 60.0, 1)
+
+
 if __name__ == "__main__":
     spark = SparkSession.builder.appName('ads-ml').getOrCreate()
 
     # Load data as spark data frame
-    df = spark.read.options(delimiter=',') \
+    df = spark.read.options(delimiter=';') \
         .options(header=True) \
         .options(inferSchema=True) \
-        .csv('preprocessed_training_data_csv')
+        .csv('../data/training_data.csv')
+
+    time_diff_in_min_udf = udf(time_diff_in_minutes, FloatType())
+    df = \
+        df.withColumn('timeSinceLastStart',
+                      time_diff_in_min_udf(
+                          df.lastStart, df.timestamp)).drop("id",
+                                                            "timestamp",
+                                                            "lastStart")
 
     # Rename install column to label
     df = df.withColumnRenamed('install', 'label')
@@ -85,6 +104,7 @@ if __name__ == "__main__":
         .build()
 
     # Hyperparameter tuning
+    t_0 = time.time()
     train_val = TrainValidationSplit(estimator=pipeline,
                                      estimatorParamMaps=param_grid,
                                      evaluator=BinaryClassificationEvaluator(
@@ -94,9 +114,12 @@ if __name__ == "__main__":
 
     print(model.bestModel.stages[-1].explainParam('regParam'))
     print(model.bestModel.stages[-1].explainParam('elasticNetParam'))
+    print(f'Grid search took: {time.time() - t_0} seconds')
 
     # Model Metrics
+    t_0 = time.time()
     predictions = model.transform(test_df)
+    print(f'Model training took: {time.time() - t_0} seconds')
 
     evaluator = BinaryClassificationEvaluator()
 
