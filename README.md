@@ -49,6 +49,13 @@ Comparison of optimal model performances
  on GCP.
 * Stochastic Gradient Descent took 15 seconds which is comparable to GCP.
 
+## 3. PySpark + Google Cloud DataProc
+At the time of writing (August, 28, 2020), Dataproc does not support PySpark
+3.0.0. Meanwhile the older versions have a much more barebones ML library
+which cannot support the `logistic_regression_training.py` script.
+
+## 4. PySpark + (???)
+
  
  
 

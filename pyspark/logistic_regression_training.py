@@ -40,7 +40,7 @@ if __name__ == "__main__":
     df = spark.read.options(delimiter=';') \
         .options(header=True) \
         .options(inferSchema=True) \
-        .csv('../data/training_data.csv')
+        .csv('gs://[bucket-name]/training_data.csv')
 
     time_diff_in_min_udf = udf(time_diff_in_minutes, FloatType())
     df = \
@@ -114,12 +114,12 @@ if __name__ == "__main__":
 
     print(model.bestModel.stages[-1].explainParam('regParam'))
     print(model.bestModel.stages[-1].explainParam('elasticNetParam'))
-    print(f'Grid search took: {time.time() - t_0} seconds')
+    print('Grid search took: {} seconds'.format(time.time() - t_0))
 
     # Model Metrics
     t_0 = time.time()
     predictions = model.transform(test_df)
-    print(f'Model training took: {time.time() - t_0} seconds')
+    print('Model training took: {} seconds'.format(time.time() - t_0))
 
     evaluator = BinaryClassificationEvaluator()
 
