@@ -3,6 +3,7 @@ from __future__ import print_function
 import time
 
 from itertools import chain
+from pyspark.context import SparkContext
 from pyspark.ml import Pipeline
 from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.evaluation import BinaryClassificationEvaluator, \
@@ -34,7 +35,9 @@ def time_diff_in_minutes(dt_0, dt_1):
 
 
 if __name__ == "__main__":
-    spark = SparkSession.builder.appName('ads-ml').getOrCreate()
+    # spark = SparkSession.builder.appName('ads-ml').getOrCreate()
+    sc = SparkContext()
+    spark = SparkSession(sc)
 
     # Load data as spark data frame
     df = spark.read.options(delimiter=';') \
