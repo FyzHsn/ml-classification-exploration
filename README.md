@@ -17,7 +17,7 @@ Encoding necessarily leads to the addition of a large number of feature
 vectors. And yet, for the purpose of testing the performance of the tech
 stack, we do not attempt to reduce the cardinality of the categorical
 features.
-4. The remaining 9 features are either numeric of datetimes.
+4. The remaining 9 features are either numeric, datetimes or binary.
 5. The two datetime features will be dropped in favour of a combined numeric
 feature.
 
@@ -34,9 +34,9 @@ Compute Engine Specs:
 - Debian GNU/Linux 9
 
 Comparison of optimal model performances:
-* Logistic Regression training took 53 seconds with precision 2%, recall 67%
-and area under roc of 0.72.  
-* Stochastic Gradient Descent training took 13 seconds with 2%, recall 52%
+* Logistic Regression training took 53 seconds with precision 2.4%, recall 67.8%
+and area under roc of 0.73.  
+* Stochastic Gradient Descent training took 13 seconds with 2.3%, recall 53%
 and area under roc of 0.69. 
 
 ### 2. Scikit-learn + Imbalanced-learn deployed on Macbook Air
