@@ -35,16 +35,29 @@ def time_diff_in_minutes(dt_0, dt_1):
 
 
 if __name__ == "__main__":
-    # spark = SparkSession.builder.appName('ads-ml').getOrCreate()
+
+    ##########################
+    # Create a Spark Session #
+    ##########################
     sc = SparkContext()
     spark = SparkSession(sc)
 
-    # Load data as spark data frame
+    # Note: Use the following line when running the script locally
+    # spark = SparkSession.builder.appName('local-sesh').getOrCreate()
+
+
+    ################################
+    # Load data from cloud storage #
+    ################################
     df = spark.read.options(delimiter=';') \
         .options(header=True) \
         .options(inferSchema=True) \
-        .csv('gs://[bucket-name]/training_data.csv')
+        .csv('gs://[bucket-name]/training.csv')
 
+
+    #######################
+    # Feature Engineering #
+    #######################
     time_diff_in_min_udf = udf(time_diff_in_minutes, FloatType())
     df = \
         df.withColumn('timeSinceLastStart',
@@ -56,7 +69,37 @@ if __name__ == "__main__":
     # Rename install column to label
     df = df.withColumnRenamed('install', 'label')
 
-    # Determine Logistic Regression Weights From Class Imbalance
+    # Split training and test set
+    train_df, test_df = df.randomSplit([0.8, 0.2])
+
+    # One hot encode categorical features
+    stages = []
+    for column in CATEGORICAL_FEATS:
+        str_indexer = StringIndexer(inputCol=column,
+                                    outputCol=column + "Index",
+                                    handleInvalid='keep')
+        encoder = OneHotEncoder(inputCols=[str_indexer.getOutputCol()],
+                                outputCols=[column + "Vec"],
+                                handleInvalid='keep')
+        stages += [str_indexer, encoder]
+
+    # Create normalized numerical features
+    assembler1 = VectorAssembler(inputCols=NUMERICAL_FEATS,
+                                 outputCol="num_features")
+    scaler = RobustScaler(inputCol='num_features',
+                          outputCol='scaled')
+    stages += [assembler1, scaler]
+
+    # Add one hot encoded categorical features
+    assembler_inputs = [c + "Vec" for c in CATEGORICAL_FEATS] + ["scaled"]
+    assembler2 = VectorAssembler(inputCols=assembler_inputs,
+                                 outputCol="features")
+    stages += [assembler2]
+
+
+    ###################################################################
+    # Determine Logistic Regression Weights To Handle Class Imbalance #
+    ###################################################################
     class_count_df = df.groupby('label').agg({'label': 'count'})
     n_1 = class_count_df.filter(df.label == '1') \
                         .select("count(label)").collect()[0][0]
@@ -71,42 +114,28 @@ if __name__ == "__main__":
     mapping_expr = create_map([lit(x) for x in chain(*class_weights.items())])
     df = df.withColumn("weights", mapping_expr.getItem(col("label")))
 
-    # Split training and test set
-    train_df, test_df = df.randomSplit([0.8, 0.2])
 
-    # Create training pipeline
-    stages = []
-    for column in CATEGORICAL_FEATS:
-        str_indexer = StringIndexer(inputCol=column,
-                                    outputCol=column + "Index",
-                                    handleInvalid='keep')
-        encoder = OneHotEncoder(inputCols=[str_indexer.getOutputCol()],
-                                outputCols=[column + "Vec"],
-                                handleInvalid='keep')
-        stages += [str_indexer, encoder]
-
-    assembler1 = VectorAssembler(inputCols=NUMERICAL_FEATS,
-                                 outputCol="num_features")
-    scaler = RobustScaler(inputCol='num_features',
-                          outputCol='scaled')
-    stages += [assembler1, scaler]
-
-    assembler_inputs = [c + "Vec" for c in CATEGORICAL_FEATS] + ["scaled"]
-    assembler2 = VectorAssembler(inputCols=assembler_inputs,
-                                 outputCol="features")
-    stages += [assembler2]
-
+    #################################################
+    # Initialize Logistic Regression Model Pipeline #
+    #################################################
     lr = LogisticRegression(weightCol='weights')
     stages.append(lr)
 
     pipeline = Pipeline(stages=stages)
 
+
+    #########################
+    # Create Parameter Grid #
+    #########################
     param_grid = ParamGridBuilder() \
         .addGrid(lr.regParam, [1.0, 0.1, 0.01, 0.001]) \
         .addGrid(lr.elasticNetParam, [0.0, 0.5, 1.0]) \
         .build()
 
-    # Hyperparameter tuning
+
+    #######################################
+    # Hyperparameter Tuning - Grid Search #
+    #######################################
     t_0 = time.time()
     train_val = TrainValidationSplit(estimator=pipeline,
                                      estimatorParamMaps=param_grid,
@@ -119,7 +148,10 @@ if __name__ == "__main__":
     print(model.bestModel.stages[-1].explainParam('elasticNetParam'))
     print('Grid search took: {} seconds'.format(time.time() - t_0))
 
-    # Model Metrics
+
+    #################
+    # Model Metrics #
+    #################
     t_0 = time.time()
     predictions = model.transform(test_df)
     print('Model training took: {} seconds'.format(time.time() - t_0))
