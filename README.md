@@ -7,6 +7,10 @@ Machine learning, as a field, has been evolving rapidly. While the popularity of
 4. TensorFlow
 5. Julia 
 
+The time comparison to perform similar tasks using different tech stack is
+shown below.
+![](https://github.com/FyzHsn/ml-classification-exploration/blob/develop/images/performance.png?raw=true)
+
 ## Dataset
 The dataset used for experimentation here has the following properties:
 1. There are 3,738,937 rows.
