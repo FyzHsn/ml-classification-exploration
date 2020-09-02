@@ -52,7 +52,7 @@ if __name__ == "__main__":
     df = spark.read.options(delimiter=';') \
         .options(header=True) \
         .options(inferSchema=True) \
-        .csv('gs://[bucket-name]/training.csv')
+        .csv('gs://pyspark-tutorial/training_data.csv')
 
 
     #######################
@@ -68,6 +68,25 @@ if __name__ == "__main__":
 
     # Rename install column to label
     df = df.withColumnRenamed('install', 'label')
+
+
+    ###################################################################
+    # Determine Logistic Regression Weights To Handle Class Imbalance #
+    ###################################################################
+    class_count_df = df.groupby('label').agg({'label': 'count'})
+    n_1 = class_count_df.filter(df.label == '1') \
+                        .select("count(label)").collect()[0][0]
+    n_0 = class_count_df.filter(df.label == '0') \
+                        .select("count(label)").collect()[0][0]
+
+    w_1 = (n_0 + n_1) / (2.0 * n_1)
+    w_0 = (n_0 + n_1) / (2.0 * n_0)
+
+    class_weights = {0: w_0, 1: w_1}
+
+    mapping_expr = create_map([lit(x) for x in chain(*class_weights.items())])
+    df = df.withColumn("weights", mapping_expr.getItem(col("label")))
+
 
     # Split training and test set
     train_df, test_df = df.randomSplit([0.8, 0.2])
@@ -95,24 +114,6 @@ if __name__ == "__main__":
     assembler2 = VectorAssembler(inputCols=assembler_inputs,
                                  outputCol="features")
     stages += [assembler2]
-
-
-    ###################################################################
-    # Determine Logistic Regression Weights To Handle Class Imbalance #
-    ###################################################################
-    class_count_df = df.groupby('label').agg({'label': 'count'})
-    n_1 = class_count_df.filter(df.label == '1') \
-                        .select("count(label)").collect()[0][0]
-    n_0 = class_count_df.filter(df.label == '0') \
-                        .select("count(label)").collect()[0][0]
-
-    w_1 = (n_0 + n_1) / (2.0 * n_1)
-    w_0 = (n_0 + n_1) / (2.0 * n_0)
-
-    class_weights = {0: w_0, 1: w_1}
-
-    mapping_expr = create_map([lit(x) for x in chain(*class_weights.items())])
-    df = df.withColumn("weights", mapping_expr.getItem(col("label")))
 
 
     #################################################
